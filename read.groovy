@@ -1,3 +1,5 @@
+import java.text.SimpleDateFormat
+
 SETTING_LIST = [['http://alfalfalfa.com/','<div class="main">','<div id="ad2">'],
 ['http://blog.livedoor.jp/samplems-bakufu/','<div class="article-body-inner">','<TABLE width="100%" cellspacing="1" border="0" cellpadding="0" bgcolor="#dfdfdf">'],
 ['http://morinogorira.seesaa.net/','<div class="blogbody">','<div id="article-ad"'],
@@ -173,10 +175,38 @@ def normalize(buf) {
 	return buf
 }
 
-def buf = new File("0001.html").getText("utf-8")
-def metaURL = getMetaURL(buf)
-def metaTitle = getMetaTitle(buf)
-def metaDate = getMetaDate(buf)
-buf = scraping(buf, metaURL)
-buf = normalize(buf)
-new File("0001.txt").write(buf, "utf-8")
+def addMetaInfo(buf, title, url, date) {
+	def meta = title + "\r\n" * 2
+	meta += "URL：" + url + "\r\n" * 2
+	meta += "公開日：" + date + "\r\n"
+
+	def today = new Date()
+	def format = new SimpleDateFormat("yyyy-MM-dd")
+	meta += "取得日：" + format.format(today) + "\r\n" * 2
+	buf = meta + buf
+}
+
+if (args.size() == 0) {
+	println "記事番号を指定してください。"
+	System.exit(0)
+} else {
+	def num = args[0]
+	if (num =~ /[0-9]{4}/) {
+		def file = new File("archive" + File.separator + num + ".html")
+		if (file.exists()) {
+			def buf = file.getText("utf-8")
+			def metaURL = getMetaURL(buf)
+			def metaTitle = getMetaTitle(buf)
+			def metaDate = getMetaDate(buf)
+			buf = scraping(buf, metaURL)
+			buf = normalize(buf)
+			buf = addMetaInfo(buf, metaTitle, metaURL, metaDate)
+			new File("archive" + File.separator + num + ".txt").write(buf, "utf-8")
+		} else {
+			println num + ".html は存在しません。"
+		}
+	} else {
+		println "数字 4 桁で指定してください。"
+		System.exit(0)
+	}
+}
