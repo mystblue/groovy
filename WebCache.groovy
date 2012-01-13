@@ -38,27 +38,55 @@ def getEncoding(src) {
 	}
 }
 
-//download("http://blog.livedoor.jp/kinisoku/archives/3236121.html", "_0001.html")
-def encoding = getEncoding("_0001.html")
-def buf = new File("_0001.html").getText(encoding)
-buf = buf.replaceAll("\r\n", "\n")
-buf = buf.replaceAll("\r", "\n")
-buf = buf.replaceAll("\n", "\r\n")
+def get(url, title, date, files) {
+	def orgFile = files[0].toString()
+	def dstFile = files[1].toString()
+	download(url, orgFile)
+	def encoding = getEncoding(orgFile)
+	def buf = new File(orgFile).getText(encoding)
+	buf = buf.replaceAll("\r\n", "\n")
+	buf = buf.replaceAll("\r", "\n")
+	buf = buf.replaceAll("\n", "\r\n")
 
-def url = "http://blog.livedoor.jp/kinisoku/archives/3236121.html"
-def title = "大学生の俺が45歳の人妻のヒモになった話：キニ速　　気になる速報"
-def date = "2012-01-12"
+	def meta = new StringBuffer("<head>")
+	meta.append("\r\n")
+	meta.append("<meta name=\"url\" content=\"")
+	meta.append(url)
+	meta.append("\">\r\n")
+	meta.append("<meta name=\"title\" content=\"")
+	meta.append(title)
+	meta.append("\">\r\n")
+	meta.append("<meta name=\"date\" content=\"")
+	meta.append(date)
+	meta.append("\">")
+	buf = buf.replace("<head>", meta)
+	new File(dstFile).write(buf, "utf-8")
+}
 
-def meta = new StringBuffer("<head>")
-meta.append("\r\n")
-meta.append("<meta name=\"url\" content=\"")
-meta.append(url)
-meta.append("\">\r\n")
-meta.append("<meta name=\"title\" content=\"")
-meta.append(title)
-meta.append("\">\r\n")
-meta.append("<meta name=\"date\" content=\"")
-meta.append(date)
-meta.append("\">")
-buf = buf.replace("<head>", meta)
-new File("0001.html").write(buf, "utf-8")
+def getNumber() {
+	for (def i = 1; i < 9; i++) {
+		def f1 = new File("archive" + File.separator + "_" + String.format("%04d", i) + ".html")
+		def f2 = new File("archive" + File.separator + String.format("%04d", i) + ".html")
+		if (!f1.exists() && !f2.exists()) {
+			return [f1, f2]
+		}
+	}
+	return null
+}
+
+def archive = new File("archive")
+if (!archive.exists()) {
+	archive.mkdirs()
+}
+
+def buf = new File("url.txt").getText("utf-8")
+def lines = buf.split("\r\n")
+for (def line in lines) {
+	def items = line.split(",")
+	if (items.length == 3) {
+		files = getNumber()
+		get(items[0], items[1], items[2], files)
+	} else {
+		println("書式に誤りがあります。" + line)
+	}
+}
